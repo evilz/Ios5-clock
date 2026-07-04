@@ -482,7 +482,9 @@
         var elapsed = startedAt ? (new Date().getTime() - startedAt) + ' ms' : '? ms';
         var statusText = '';
         try { statusText = request.statusText || ''; } catch (e) {}
-        return phase + ' · readyState=' + request.readyState + ' · status=' + request.status +
+        var status = '?';
+        try { status = request.status; } catch (e) {}
+        return phase + ' · readyState=' + request.readyState + ' · status=' + status +
           (statusText ? ' ' + statusText : '') + ' · durée=' + elapsed + ' · ' +
           getXhrSupportLabel(request) + ' · URL=' + shorten(url, 140);
       }
