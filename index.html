@@ -410,22 +410,27 @@
         setClass(weatherBackdrop, 'visible', true);
       }
 
-      function updateWeatherText(data) {
+      function updateWeatherText(data, locationLabel) {
         if (!data || !data.current_weather) {
-          weatherEl.innerHTML = 'météo indisponible';
+          weatherEl.textContent = 'météo indisponible';
           return;
         }
 
         var current = data.current_weather;
         var label = weatherCodeLabels[current.weathercode] || 'conditions météo';
         setWeatherBackground(current.weathercode);
-        weatherEl.innerHTML = Math.round(current.temperature) + '&deg;C · ' + label;
+        var text = Math.round(current.temperature) + '°C · ' + label;
+        if (locationLabel) {
+          text += ' · ' + locationLabel;
+        }
+        weatherEl.textContent = text;
       }
 
-      function loadWeather(latitude, longitude) {
+      function loadWeather(latitude, longitude, locationLabel) {
         var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + encodeURIComponent(latitude) + '&longitude=' + encodeURIComponent(longitude) + '&current_weather=true&temperature_unit=celsius&timezone=auto';
         var request = new XMLHttpRequest();
         request.open('GET', url, true);
+        request.timeout = 15000;
         request.onreadystatechange = function () {
           if (request.readyState !== 4) {
             return;
@@ -433,21 +438,29 @@
 
           if (request.status >= 200 && request.status < 300) {
             try {
-              updateWeatherText(JSON.parse(request.responseText));
+              updateWeatherText(JSON.parse(request.responseText), locationLabel);
             } catch (e) {
-              weatherEl.innerHTML = 'météo indisponible';
+              weatherEl.textContent = 'météo indisponible (erreur parse: ' + e.message + ')';
             }
           } else {
-            weatherEl.innerHTML = 'météo indisponible';
+            weatherEl.textContent = 'météo indisponible (HTTP ' + request.status + ')';
           }
+        };
+        request.onerror = function () {
+          weatherEl.textContent = 'météo indisponible (erreur réseau)';
+        };
+        request.ontimeout = function () {
+          weatherEl.textContent = 'météo indisponible (délai dépassé)';
         };
         request.send(null);
       }
 
       function geocodeManualLocation(query) {
-        var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(query);
+        var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=fr&q=' + encodeURIComponent(query);
         var request = new XMLHttpRequest();
         request.open('GET', url, true);
+        request.timeout = 15000;
+        weatherEl.textContent = 'géocodage en cours…';
         request.onreadystatechange = function () {
           var result;
           if (request.readyState !== 4) {
@@ -464,14 +477,25 @@
                   label: result[0].display_name
                 });
                 var shortLabel = (result[0].display_name || '').split(',')[0];
-                weatherEl.textContent = 'météo en chargement' + (shortLabel ? ' · ' + shortLabel : '');
-                loadWeather(result[0].lat, result[0].lon);
+                weatherEl.textContent = 'météo en chargement · ' + shortLabel;
+                loadWeather(result[0].lat, result[0].lon, shortLabel);
                 return;
               }
-            } catch (e) {}
+              weatherEl.textContent = 'adresse introuvable (aucun résultat pour "' + query + '")';
+            } catch (e) {
+              weatherEl.textContent = 'adresse introuvable (erreur parse: ' + e.message + ')';
+            }
+          } else if (request.status === 0) {
+            weatherEl.textContent = 'adresse introuvable (erreur réseau, vérifier connexion/SSL)';
+          } else {
+            weatherEl.textContent = 'adresse introuvable (HTTP ' + request.status + ')';
           }
-
-          weatherEl.innerHTML = 'adresse météo introuvable';
+        };
+        request.onerror = function () {
+          weatherEl.textContent = 'adresse introuvable (erreur réseau)';
+        };
+        request.ontimeout = function () {
+          weatherEl.textContent = 'adresse introuvable (délai dépassé, 15 s)';
         };
         request.send(null);
       }
@@ -482,20 +506,20 @@
           manualWeatherLocation = savedLocation;
           var shortLabel = savedLocation.label ? savedLocation.label.split(',')[0] : '';
           weatherEl.textContent = 'météo en chargement' + (shortLabel ? ' · ' + shortLabel : '');
-          loadWeather(savedLocation.latitude, savedLocation.longitude);
+          loadWeather(savedLocation.latitude, savedLocation.longitude, shortLabel || null);
           return;
         }
 
         if (!navigator.geolocation) {
-          weatherEl.innerHTML = 'météo : saisir une adresse';
+          weatherEl.textContent = 'météo : saisir une adresse';
           return;
         }
 
         navigator.geolocation.getCurrentPosition(function (position) {
-          weatherEl.innerHTML = 'météo en chargement';
-          loadWeather(position.coords.latitude, position.coords.longitude);
-        }, function () {
-          weatherEl.innerHTML = 'météo : saisir une adresse';
+          weatherEl.textContent = 'météo en chargement · GPS';
+          loadWeather(position.coords.latitude, position.coords.longitude, 'GPS');
+        }, function (err) {
+          weatherEl.textContent = 'météo : saisir une adresse' + (err && err.code ? ' (geo err ' + err.code + ')' : '');
         }, { maximumAge: 1800000, timeout: 12000 });
       }
 
@@ -546,10 +570,10 @@
         use24Hour = formatToggle.checked;
         updateClock();
       };
-      manualLocationForm.onsubmit = function () {
+      manualLocationForm.onsubmit = function (e) {
+        if (e && e.preventDefault) { e.preventDefault(); }
         var query = manualLocationQuery.value.replace(/^\s+|\s+$/g, '');
         if (query) {
-          weatherEl.innerHTML = 'recherche météo';
           geocodeManualLocation(query);
         }
         return false;
