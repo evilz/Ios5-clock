@@ -9,13 +9,14 @@ A premium fullscreen digital clock for the original iPad, inspired by Big Clock,
 - Smaller seconds tucked against the lower-right edge of the minutes.
 - Thin light-gray date centered beneath the time.
 - Helvetica Neue Ultra Light / Helvetica typography stack.
-- Soft glow around the digits with subtle glass reflections.
+- Softer, less glossy white digits with only a restrained glow.
 - Tiny gear icon in the bottom-left corner and fullscreen icon in the bottom-right corner.
+- A very discreet weather line beneath the date, powered by Open-Meteo via a CORS-friendly API.
 - No menus, panels, or distracting controls.
 
 ## Usage
 
-Open `index.html` directly in a browser or serve the repository as a static site. The clock updates once per second and uses the device's local time and date.
+Open `index.html` directly in a browser or serve the repository as a static site. The clock updates once per second and uses the device's local time and date. If location access is allowed in the browser, it also fetches current weather from Open-Meteo without an API key.
 
 ## iPad focus
 

@@ -32,21 +32,21 @@
 
     body:before {
       top: 0;
-      height: 42%;
+      height: 30%;
       background: -webkit-gradient(linear, left top, left bottom,
-        from(rgba(255,255,255,0.135)), color-stop(0.16, rgba(255,255,255,0.045)),
-        color-stop(0.42, rgba(255,255,255,0.014)), to(rgba(255,255,255,0)));
-      background: linear-gradient(to bottom, rgba(255,255,255,0.135), rgba(255,255,255,0.045) 16%, rgba(255,255,255,0.014) 42%, rgba(255,255,255,0));
+        from(rgba(255,255,255,0.055)), color-stop(0.22, rgba(255,255,255,0.018)),
+        to(rgba(255,255,255,0)));
+      background: linear-gradient(to bottom, rgba(255,255,255,0.055), rgba(255,255,255,0.018) 22%, rgba(255,255,255,0));
     }
 
     body:after {
-      top: 8%;
+      top: 7%;
       left: -8%;
       width: 116%;
-      height: 22%;
+      height: 15%;
       -webkit-transform: rotate(-7deg);
       transform: rotate(-7deg);
-      background: rgba(255,255,255,0.035);
+      background: rgba(255,255,255,0.012);
       -webkit-border-radius: 50%;
       border-radius: 50%;
       -webkit-filter: blur(1px);
@@ -58,14 +58,14 @@
       top: 50%;
       left: 0;
       width: 100%;
-      margin-top: -184px;
+      margin-top: -218px;
       text-align: center;
       z-index: 2;
     }
 
     #clock {
       display: inline-block;
-      min-width: 940px;
+      width: 100%;
     }
 
     #time-row {
@@ -75,29 +75,27 @@
 
     #time {
       display: inline-block;
-      font-size: 238px;
-      line-height: 214px;
+      font-size: 292px;
+      line-height: 258px;
       font-weight: 100;
-      letter-spacing: -17px;
+      letter-spacing: -22px;
       color: #ffffff;
-      text-shadow: 0 0 7px rgba(255,255,255,0.72),
-        0 0 26px rgba(255,255,255,0.34),
-        0 0 72px rgba(122,164,255,0.22);
+      text-shadow: 0 0 3px rgba(255,255,255,0.36),
+        0 0 15px rgba(255,255,255,0.14);
     }
 
     #seconds {
       display: inline-block;
-      width: 76px;
-      margin-left: 18px;
-      color: rgba(255,255,255,0.92);
-      font-size: 60px;
-      line-height: 60px;
+      width: 84px;
+      margin-left: 16px;
+      color: rgba(255,255,255,0.9);
+      font-size: 66px;
+      line-height: 66px;
       font-weight: 100;
       letter-spacing: -2px;
       text-align: left;
-      vertical-align: -42px;
-      text-shadow: 0 0 6px rgba(255,255,255,0.5),
-        0 0 22px rgba(255,255,255,0.22);
+      vertical-align: -51px;
+      text-shadow: 0 0 3px rgba(255,255,255,0.26);
     }
 
     #date {
@@ -108,7 +106,18 @@
       font-weight: 100;
       letter-spacing: 1.8px;
       text-align: center;
-      text-shadow: 0 0 14px rgba(255,255,255,0.12);
+      text-shadow: 0 0 8px rgba(255,255,255,0.08);
+    }
+
+    #weather {
+      margin-top: 10px;
+      color: rgba(210,210,214,0.58);
+      font-size: 18px;
+      line-height: 24px;
+      font-weight: 100;
+      letter-spacing: 1.2px;
+      text-align: center;
+      text-shadow: none;
     }
 
     .corner-icon {
@@ -203,11 +212,11 @@
     }
 
     @media only screen and (orientation: portrait) {
-      #stage { margin-top: -138px; }
-      #clock { min-width: 710px; }
-      #time { font-size: 176px; line-height: 164px; letter-spacing: -12px; }
-      #seconds { width: 58px; margin-left: 13px; font-size: 45px; line-height: 45px; vertical-align: -32px; }
-      #date { margin-top: 28px; font-size: 23px; line-height: 30px; }
+      #stage { margin-top: -166px; }
+      #time { font-size: 202px; line-height: 188px; letter-spacing: -14px; }
+      #seconds { width: 62px; margin-left: 12px; font-size: 49px; line-height: 49px; vertical-align: -36px; }
+      #date { margin-top: 30px; font-size: 23px; line-height: 30px; }
+      #weather { margin-top: 8px; font-size: 16px; line-height: 22px; }
     }
   </style>
 </head>
@@ -216,6 +225,7 @@
     <div id="clock">
       <div id="time-row"><span id="time">08:42</span><span id="seconds">15</span></div>
       <div id="date">lundi 9 janvier</div>
+      <div id="weather">météo en attente de localisation</div>
     </div>
   </div>
   <div id="settings-panel" class="hidden" aria-hidden="true">
@@ -229,6 +239,7 @@
       var timeEl = document.getElementById('time');
       var secondsEl = document.getElementById('seconds');
       var dateEl = document.getElementById('date');
+      var weatherEl = document.getElementById('weather');
       var settingsButton = document.getElementById('settings');
       var fullscreenButton = document.getElementById('fullscreen');
       var settingsPanel = document.getElementById('settings-panel');
@@ -238,6 +249,12 @@
       var months = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
       var showSeconds = secondsToggle.checked;
       var use24Hour = formatToggle.checked;
+      var weatherCodeLabels = {
+        0: 'ciel clair', 1: 'plutôt clair', 2: 'partiellement nuageux', 3: 'nuageux',
+        45: 'brouillard', 48: 'brouillard givrant', 51: 'bruine légère', 53: 'bruine', 55: 'bruine forte',
+        61: 'pluie légère', 63: 'pluie', 65: 'forte pluie', 71: 'neige légère', 73: 'neige', 75: 'forte neige',
+        80: 'averses légères', 81: 'averses', 82: 'fortes averses', 95: 'orage'
+      };
 
       function pad(value) {
         return value < 10 ? '0' + value : '' + value;
@@ -258,6 +275,47 @@
         secondsEl.innerHTML = pad(now.getSeconds());
         secondsEl.style.visibility = showSeconds ? 'visible' : 'hidden';
         dateEl.innerHTML = days[now.getDay()] + ' ' + now.getDate() + ' ' + months[now.getMonth()];
+      }
+
+      function updateWeatherText(data) {
+        if (!data || !data.current_weather) {
+          weatherEl.innerHTML = 'météo indisponible';
+          return;
+        }
+
+        var current = data.current_weather;
+        var label = weatherCodeLabels[current.weathercode] || 'conditions météo';
+        weatherEl.innerHTML = Math.round(current.temperature) + '&deg;C · ' + label;
+      }
+
+      function loadWeather(latitude, longitude) {
+        var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + encodeURIComponent(latitude) + '&longitude=' + encodeURIComponent(longitude) + '&current_weather=true&temperature_unit=celsius&timezone=auto';
+        var request = new XMLHttpRequest();
+        request.open('GET', url, true);
+        request.onreadystatechange = function () {
+          if (request.readyState === 4) {
+            if (request.status >= 200 && request.status < 300) {
+              updateWeatherText(JSON.parse(request.responseText));
+            } else {
+              weatherEl.innerHTML = 'météo indisponible';
+            }
+          }
+        };
+        request.send(null);
+      }
+
+      function initWeather() {
+        if (!navigator.geolocation) {
+          weatherEl.innerHTML = 'météo : localisation non disponible';
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(function (position) {
+          weatherEl.innerHTML = 'météo en chargement';
+          loadWeather(position.coords.latitude, position.coords.longitude);
+        }, function () {
+          weatherEl.innerHTML = 'météo : autoriser la localisation';
+        }, { maximumAge: 1800000, timeout: 12000 });
       }
 
       function toggleSettings() {
@@ -309,7 +367,9 @@
       };
 
       updateClock();
+      initWeather();
       setInterval(updateClock, 1000);
+      setInterval(initWeather, 1800000);
     }());
   </script>
 </body>
