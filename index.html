@@ -21,12 +21,45 @@
       user-select: none;
     }
 
-    body:before, body:after {
+    #weather-backdrop, body:before, body:after {
       content: "";
       position: absolute;
       left: 0;
       right: 0;
       pointer-events: none;
+    }
+
+    #weather-backdrop {
+      top: 0;
+      bottom: 0;
+      z-index: 0;
+      background: #000000;
+      background-position: center center;
+      background-repeat: no-repeat;
+      -webkit-background-size: cover;
+      background-size: cover;
+      opacity: 0;
+      -webkit-transition: opacity 900ms ease;
+      transition: opacity 900ms ease;
+    }
+
+    #weather-backdrop.visible {
+      opacity: 0.46;
+    }
+
+    #weather-backdrop:after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.42);
+      background: -webkit-gradient(linear, left top, left bottom, from(rgba(0,0,0,0.30)), color-stop(0.50, rgba(0,0,0,0.54)), to(rgba(0,0,0,0.72)));
+      background: linear-gradient(to bottom, rgba(0,0,0,0.30), rgba(0,0,0,0.54) 50%, rgba(0,0,0,0.72));
+    }
+
+    body:before, body:after {
       z-index: 1;
     }
 
@@ -150,7 +183,7 @@
       left: 18px;
       bottom: 66px;
       z-index: 4;
-      width: 188px;
+      width: 236px;
       padding: 12px 13px;
       border: 1px solid rgba(255,255,255,0.16);
       background: rgba(18,18,20,0.86);
@@ -178,6 +211,46 @@
     #settings-panel input {
       margin: 0 8px 0 0;
       vertical-align: -2px;
+    }
+
+    #settings-panel .manual-location {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,0.12);
+    }
+
+    #manual-location-query {
+      width: 142px;
+      height: 24px;
+      margin: 0;
+      padding: 0 7px;
+      border: 1px solid rgba(255,255,255,0.20);
+      background: rgba(0,0,0,0.36);
+      color: #ffffff;
+      font-size: 13px;
+      -webkit-border-radius: 7px;
+      border-radius: 7px;
+      -webkit-appearance: none;
+    }
+
+    #manual-location-submit {
+      height: 26px;
+      margin-left: 5px;
+      padding: 0 8px;
+      border: 1px solid rgba(255,255,255,0.24);
+      background: rgba(255,255,255,0.09);
+      color: #ffffff;
+      font-size: 13px;
+      -webkit-border-radius: 7px;
+      border-radius: 7px;
+      -webkit-appearance: none;
+    }
+
+    #manual-location-help {
+      margin-top: 6px;
+      color: rgba(255,255,255,0.52);
+      font-size: 11px;
+      line-height: 14px;
     }
 
     #settings {
@@ -221,6 +294,7 @@
   </style>
 </head>
 <body>
+  <div id="weather-backdrop"></div>
   <div id="stage">
     <div id="clock">
       <div id="time-row"><span id="time">08:42</span><span id="seconds">15</span></div>
@@ -231,6 +305,11 @@
   <div id="settings-panel" class="hidden" aria-hidden="true">
     <label><input id="toggle-seconds" type="checkbox" checked>Afficher les secondes</label>
     <label><input id="toggle-24h" type="checkbox" checked>Format 24 heures</label>
+    <form id="manual-location-form" class="manual-location" action="#">
+      <input id="manual-location-query" type="text" autocapitalize="off" autocomplete="postal-code" placeholder="adresse ou code postal" aria-label="Adresse ou code postal">
+      <button id="manual-location-submit" type="submit">OK</button>
+      <div id="manual-location-help">Fallback iPad 1 si la localisation échoue.</div>
+    </form>
   </div>
   <button id="settings" class="corner-icon" type="button" aria-label="Réglages" aria-controls="settings-panel" aria-expanded="false">&#9881;</button>
   <button id="fullscreen" class="corner-icon" type="button" aria-label="Plein écran"></button>
@@ -240,24 +319,66 @@
       var secondsEl = document.getElementById('seconds');
       var dateEl = document.getElementById('date');
       var weatherEl = document.getElementById('weather');
+      var weatherBackdrop = document.getElementById('weather-backdrop');
       var settingsButton = document.getElementById('settings');
       var fullscreenButton = document.getElementById('fullscreen');
       var settingsPanel = document.getElementById('settings-panel');
       var secondsToggle = document.getElementById('toggle-seconds');
       var formatToggle = document.getElementById('toggle-24h');
+      var manualLocationForm = document.getElementById('manual-location-form');
+      var manualLocationQuery = document.getElementById('manual-location-query');
       var days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
       var months = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
       var showSeconds = secondsToggle.checked;
       var use24Hour = formatToggle.checked;
+      var manualWeatherLocation = null;
       var weatherCodeLabels = {
         0: 'ciel clair', 1: 'plutôt clair', 2: 'partiellement nuageux', 3: 'nuageux',
         45: 'brouillard', 48: 'brouillard givrant', 51: 'bruine légère', 53: 'bruine', 55: 'bruine forte',
-        61: 'pluie légère', 63: 'pluie', 65: 'forte pluie', 71: 'neige légère', 73: 'neige', 75: 'forte neige',
-        80: 'averses légères', 81: 'averses', 82: 'fortes averses', 95: 'orage'
+        56: 'bruine verglaçante', 57: 'forte bruine verglaçante', 61: 'pluie légère', 63: 'pluie', 65: 'forte pluie',
+        66: 'pluie verglaçante', 67: 'forte pluie verglaçante', 71: 'neige légère', 73: 'neige', 75: 'forte neige',
+        77: 'grains de neige', 80: 'averses légères', 81: 'averses', 82: 'fortes averses',
+        85: 'averses de neige', 86: 'fortes averses de neige', 95: 'orage', 96: 'orage avec grêle', 99: 'fort orage avec grêle'
+      };
+      var weatherCodeBackgrounds = {
+        0: 'code-0', 1: 'code-1', 2: 'code-2', 3: 'code-3',
+        45: 'code-45', 48: 'code-48', 51: 'code-51', 53: 'code-53', 55: 'code-55', 56: 'code-56', 57: 'code-57',
+        61: 'code-61', 63: 'code-63', 65: 'code-65', 66: 'code-66', 67: 'code-67',
+        71: 'code-71', 73: 'code-73', 75: 'code-75', 77: 'code-77',
+        80: 'code-80', 81: 'code-81', 82: 'code-82', 85: 'code-85', 86: 'code-86',
+        95: 'code-95', 96: 'code-96', 99: 'code-99'
       };
 
       function pad(value) {
         return value < 10 ? '0' + value : '' + value;
+      }
+
+      function hasClass(element, className) {
+        return (' ' + element.className + ' ').indexOf(' ' + className + ' ') > -1;
+      }
+
+      function setClass(element, className, enabled) {
+        var current = ' ' + element.className + ' ';
+        if (enabled && current.indexOf(' ' + className + ' ') === -1) {
+          element.className = (element.className ? element.className + ' ' : '') + className;
+        } else if (!enabled) {
+          element.className = current.replace(' ' + className + ' ', ' ').replace(/^\s+|\s+$/g, '');
+        }
+      }
+
+      function saveManualWeatherLocation(location) {
+        manualWeatherLocation = location;
+        try {
+          window.localStorage.setItem('ios5-clock-weather-location', JSON.stringify(location));
+        } catch (e) {}
+      }
+
+      function getSavedManualWeatherLocation() {
+        try {
+          return JSON.parse(window.localStorage.getItem('ios5-clock-weather-location'));
+        } catch (e) {
+          return null;
+        }
       }
 
       function updateClock() {
@@ -277,6 +398,18 @@
         dateEl.innerHTML = days[now.getDay()] + ' ' + now.getDate() + ' ' + months[now.getMonth()];
       }
 
+      function setWeatherBackground(weatherCode) {
+        var name = weatherCodeBackgrounds[weatherCode];
+        if (!name) {
+          setClass(weatherBackdrop, 'visible', false);
+          weatherBackdrop.style.backgroundImage = '';
+          return;
+        }
+
+        weatherBackdrop.style.backgroundImage = 'url(assets/weather/' + name + '.svg)';
+        setClass(weatherBackdrop, 'visible', true);
+      }
+
       function updateWeatherText(data) {
         if (!data || !data.current_weather) {
           weatherEl.innerHTML = 'météo indisponible';
@@ -285,6 +418,7 @@
 
         var current = data.current_weather;
         var label = weatherCodeLabels[current.weathercode] || 'conditions météo';
+        setWeatherBackground(current.weathercode);
         weatherEl.innerHTML = Math.round(current.temperature) + '&deg;C · ' + label;
       }
 
@@ -310,9 +444,50 @@
         request.send(null);
       }
 
+      function geocodeManualLocation(query) {
+        var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(query);
+        var request = new XMLHttpRequest();
+        request.open('GET', url, true);
+        request.onreadystatechange = function () {
+          var result;
+          if (request.readyState !== 4) {
+            return;
+          }
+
+          if (request.status >= 200 && request.status < 300) {
+            try {
+              result = JSON.parse(request.responseText);
+              if (result && result.length) {
+                saveManualWeatherLocation({
+                  latitude: result[0].lat,
+                  longitude: result[0].lon,
+                  label: result[0].display_name
+                });
+                var shortLabel = (result[0].display_name || '').split(',')[0];
+                weatherEl.textContent = 'météo en chargement' + (shortLabel ? ' · ' + shortLabel : '');
+                loadWeather(result[0].lat, result[0].lon);
+                return;
+              }
+            } catch (e) {}
+          }
+
+          weatherEl.innerHTML = 'adresse météo introuvable';
+        };
+        request.send(null);
+      }
+
       function initWeather() {
+        var savedLocation = manualWeatherLocation || getSavedManualWeatherLocation();
+        if (savedLocation && savedLocation.latitude && savedLocation.longitude) {
+          manualWeatherLocation = savedLocation;
+          var shortLabel = savedLocation.label ? savedLocation.label.split(',')[0] : '';
+          weatherEl.textContent = 'météo en chargement' + (shortLabel ? ' · ' + shortLabel : '');
+          loadWeather(savedLocation.latitude, savedLocation.longitude);
+          return;
+        }
+
         if (!navigator.geolocation) {
-          weatherEl.innerHTML = 'météo : localisation non disponible';
+          weatherEl.innerHTML = 'météo : saisir une adresse';
           return;
         }
 
@@ -320,16 +495,16 @@
           weatherEl.innerHTML = 'météo en chargement';
           loadWeather(position.coords.latitude, position.coords.longitude);
         }, function () {
-          weatherEl.innerHTML = 'météo : autoriser la localisation';
+          weatherEl.innerHTML = 'météo : saisir une adresse';
         }, { maximumAge: 1800000, timeout: 12000 });
       }
 
       function toggleSettings() {
-        var isHidden = settingsPanel.classList.contains('hidden');
-        settingsPanel.classList.toggle('hidden', !isHidden);
+        var isHidden = hasClass(settingsPanel, 'hidden');
+        setClass(settingsPanel, 'hidden', !isHidden);
         settingsPanel.setAttribute('aria-hidden', !isHidden ? 'true' : 'false');
         settingsButton.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
-        settingsButton.classList.toggle('active', isHidden);
+        setClass(settingsButton, 'active', isHidden);
       }
 
       function requestFullscreen(element) {
@@ -370,6 +545,14 @@
       formatToggle.onclick = function () {
         use24Hour = formatToggle.checked;
         updateClock();
+      };
+      manualLocationForm.onsubmit = function () {
+        var query = manualLocationQuery.value.replace(/^\s+|\s+$/g, '');
+        if (query) {
+          weatherEl.innerHTML = 'recherche météo';
+          geocodeManualLocation(query);
+        }
+        return false;
       };
 
       updateClock();
