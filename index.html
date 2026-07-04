@@ -44,7 +44,7 @@
     }
 
     #weather-backdrop.visible {
-      opacity: 0.46;
+      opacity: 0.8;
     }
 
     #weather-backdrop:after {
@@ -535,7 +535,7 @@
 
           if (request.status >= 200 && request.status < 300) {
             try {
-              setWeatherDebug(describeXhr(request, label + ' OK', startedAt, url) + ' · réponse=' + (request.responseText ? request.responseText.length : 0) + ' caractères');
+              //setWeatherDebug(describeXhr(request, label + ' OK', startedAt, url) + ' · réponse=' + (request.responseText ? request.responseText.length : 0) + ' caractères');
               successCallback(JSON.parse(request.responseText));
             } catch (e) {
               weatherEl.textContent = errorPrefix + ' (erreur parse: ' + e.message + ')';
