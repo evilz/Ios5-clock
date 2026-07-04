@@ -2,101 +2,197 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Horloge numérique</title>
+  <title>iOS 5 Clock</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <style type="text/css">
     html, body {
-      margin: 0; padding: 0; width: 100%; height: 100%;
-      background: #111; color: #f5f2ea;
-      font-family: Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
       overflow: hidden;
+      background: #000000;
+      color: #ffffff;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -webkit-user-select: none;
+      user-select: none;
     }
-    body {
-      background: #141414;
-      background: -webkit-gradient(radial, 50% 35%, 0, 50% 50%, 650,
-        from(#2a2a2a), color-stop(0.45, #151515), to(#050505));
+
+    body:before, body:after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      pointer-events: none;
+      z-index: 1;
     }
-    #wrap {
-      position: absolute; top: 50%; left: 0; width: 100%;
-      margin-top: -145px; text-align: center;
+
+    body:before {
+      top: 0;
+      height: 42%;
+      background: -webkit-gradient(linear, left top, left bottom,
+        from(rgba(255,255,255,0.135)), color-stop(0.16, rgba(255,255,255,0.045)),
+        color-stop(0.42, rgba(255,255,255,0.014)), to(rgba(255,255,255,0)));
+      background: linear-gradient(to bottom, rgba(255,255,255,0.135), rgba(255,255,255,0.045) 16%, rgba(255,255,255,0.014) 42%, rgba(255,255,255,0));
     }
+
+    body:after {
+      top: 8%;
+      left: -8%;
+      width: 116%;
+      height: 22%;
+      -webkit-transform: rotate(-7deg);
+      transform: rotate(-7deg);
+      background: rgba(255,255,255,0.035);
+      -webkit-border-radius: 50%;
+      border-radius: 50%;
+      -webkit-filter: blur(1px);
+      filter: blur(1px);
+    }
+
+    #stage {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 100%;
+      margin-top: -184px;
+      text-align: center;
+      z-index: 2;
+    }
+
     #clock {
       display: inline-block;
-      padding: 38px 54px 42px 54px;
-      min-width: 720px;
-      border: 1px solid rgba(255,255,255,0.10);
-      -webkit-border-radius: 28px; border-radius: 28px;
-      background: rgba(255,255,255,0.035);
-      -webkit-box-shadow: 0 28px 80px rgba(0,0,0,0.80),
-        inset 0 1px 0 rgba(255,255,255,0.12),
-        inset 0 -1px 0 rgba(0,0,0,0.55);
-      box-shadow: 0 28px 80px rgba(0,0,0,0.80),
-        inset 0 1px 0 rgba(255,255,255,0.12),
-        inset 0 -1px 0 rgba(0,0,0,0.55);
+      min-width: 940px;
     }
-    #time {
-      font-size: 138px; line-height: 132px; font-weight: bold;
-      letter-spacing: -8px;
-      text-shadow: 0 2px 0 rgba(255,255,255,0.06),
-        0 12px 38px rgba(0,0,0,0.75);
+
+    #time-row {
       white-space: nowrap;
+      text-align: center;
     }
+
+    #time {
+      display: inline-block;
+      font-size: 238px;
+      line-height: 214px;
+      font-weight: 100;
+      letter-spacing: -17px;
+      color: #ffffff;
+      text-shadow: 0 0 7px rgba(255,255,255,0.72),
+        0 0 26px rgba(255,255,255,0.34),
+        0 0 72px rgba(122,164,255,0.22);
+    }
+
     #seconds {
-      font-size: 54px; letter-spacing: -2px; color: #bfb8aa;
-      vertical-align: 48px; margin-left: 14px;
+      display: inline-block;
+      width: 76px;
+      margin-left: 18px;
+      color: rgba(255,255,255,0.92);
+      font-size: 60px;
+      line-height: 60px;
+      font-weight: 100;
+      letter-spacing: -2px;
+      text-align: left;
+      vertical-align: -42px;
+      text-shadow: 0 0 6px rgba(255,255,255,0.5),
+        0 0 22px rgba(255,255,255,0.22);
     }
+
     #date {
-      margin-top: 18px;
-      font-size: 28px; line-height: 36px;
-      letter-spacing: 5px; text-transform: uppercase;
-      color: #aaa394;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.75);
+      margin-top: 34px;
+      color: rgba(210,210,214,0.72);
+      font-size: 28px;
+      line-height: 34px;
+      font-weight: 100;
+      letter-spacing: 1.8px;
+      text-align: center;
+      text-shadow: 0 0 14px rgba(255,255,255,0.12);
     }
-    #hint {
-      position: absolute; bottom: 22px; left: 0; width: 100%;
-      text-align: center; font-size: 15px; letter-spacing: 2px;
-      color: rgba(255,255,255,0.28);
+
+    .corner-icon {
+      position: absolute;
+      bottom: 23px;
+      z-index: 3;
+      width: 22px;
+      height: 22px;
+      opacity: 0.42;
+      color: #ffffff;
+      text-align: center;
+      font-size: 22px;
+      line-height: 22px;
+      text-shadow: 0 0 10px rgba(255,255,255,0.34);
     }
+
+    #settings {
+      left: 24px;
+    }
+
+    #fullscreen {
+      right: 24px;
+    }
+
+    #fullscreen:before, #fullscreen:after {
+      content: "";
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-color: #ffffff;
+      opacity: 0.95;
+    }
+
+    #fullscreen:before {
+      top: 1px;
+      right: 1px;
+      border-top: 2px solid;
+      border-right: 2px solid;
+    }
+
+    #fullscreen:after {
+      left: 1px;
+      bottom: 1px;
+      border-left: 2px solid;
+      border-bottom: 2px solid;
+    }
+
     @media only screen and (orientation: portrait) {
-      #wrap { margin-top: -120px; }
-      #clock { min-width: 560px; padding: 34px 38px 38px 38px; }
-      #time { font-size: 104px; line-height: 104px; letter-spacing: -6px; }
-      #seconds { font-size: 42px; vertical-align: 36px; margin-left: 10px; }
-      #date { font-size: 23px; letter-spacing: 4px; }
+      #stage { margin-top: -138px; }
+      #clock { min-width: 710px; }
+      #time { font-size: 176px; line-height: 164px; letter-spacing: -12px; }
+      #seconds { width: 58px; margin-left: 13px; font-size: 45px; line-height: 45px; vertical-align: -32px; }
+      #date { margin-top: 28px; font-size: 23px; line-height: 30px; }
     }
   </style>
 </head>
 <body>
-  <div id="wrap">
+  <div id="stage">
     <div id="clock">
-      <div><span id="time">00:00</span><span id="seconds">00</span></div>
-      <div id="date">Chargement</div>
+      <div id="time-row"><span id="time">08:42</span><span id="seconds">15</span></div>
+      <div id="date">Monday, January 9</div>
     </div>
   </div>
-  <div id="hint">touchez l'écran pour masquer / afficher la date</div>
+  <div id="settings" class="corner-icon">&#9881;</div>
+  <div id="fullscreen" class="corner-icon" aria-hidden="true"></div>
   <script type="text/javascript">
     (function () {
       var timeEl = document.getElementById('time');
       var secondsEl = document.getElementById('seconds');
       var dateEl = document.getElementById('date');
-      var hintEl = document.getElementById('hint');
-      var dateVisible = true;
-      var days = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
-      var months = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
-      function pad(n) { return n < 10 ? '0' + n : '' + n; }
+      var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+      function pad(value) {
+        return value < 10 ? '0' + value : '' + value;
+      }
+
       function updateClock() {
         var now = new Date();
         timeEl.innerHTML = pad(now.getHours()) + ':' + pad(now.getMinutes());
         secondsEl.innerHTML = pad(now.getSeconds());
-        dateEl.innerHTML = days[now.getDay()] + ' ' + now.getDate() + ' ' + months[now.getMonth()] + ' ' + now.getFullYear();
+        dateEl.innerHTML = days[now.getDay()] + ', ' + months[now.getMonth()] + ' ' + now.getDate();
       }
-      function toggleDate() {
-        dateVisible = !dateVisible;
-        dateEl.style.display = dateVisible ? 'block' : 'none';
-        hintEl.style.display = 'none';
-      }
-      document.onclick = toggleDate;
-      document.ontouchstart = toggleDate;
+
       updateClock();
       setInterval(updateClock, 1000);
     }());
