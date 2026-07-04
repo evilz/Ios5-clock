@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="768" viewBox="0 0 1024 768">
+<defs>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#111820"/><stop offset="0.58" stop-color="#11151b"/><stop offset="1" stop-color="#020305"/></linearGradient>
+  <radialGradient id="glow" cx="50%" cy="35%" r="48%"><stop offset="0" stop-color="#b8c0cc" stop-opacity="0.95"/><stop offset="0.22" stop-color="#b8c0cc" stop-opacity="0.28"/><stop offset="1" stop-color="#b8c0cc" stop-opacity="0"/></radialGradient>
+  <filter id="blur"><feGaussianBlur stdDeviation="18"/></filter>
+  <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="3" seed="7"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="table" tableValues="0 0.12"/></feComponentTransfer></filter>
+ </defs>
+<rect width="1024" height="768" fill="url(#sky)"/>
+<rect width="1024" height="768" fill="url(#glow)"/>
+<ellipse cx="130.0" cy="210.0" rx="150.0" ry="55.0" fill="#fff" opacity="0.2" filter="url(#blur)"/>
+<ellipse cx="250.0" cy="190.0" rx="180.0" ry="70.0" fill="#fff" opacity="0.2" filter="url(#blur)"/>
+<ellipse cx="370.0" cy="215.0" rx="150.0" ry="56.0" fill="#fff" opacity="0.2" filter="url(#blur)"/>
+<ellipse cx="230.0" cy="154.0" rx="120.0" ry="64.0" fill="#fff" opacity="0.2" filter="url(#blur)"/>
+<ellipse cx="435.0" cy="270.0" rx="187.5" ry="68.75" fill="#fff" opacity="0.18" filter="url(#blur)"/>
+<ellipse cx="585.0" cy="245.0" rx="225.0" ry="87.5" fill="#fff" opacity="0.18" filter="url(#blur)"/>
+<ellipse cx="735.0" cy="276.25" rx="187.5" ry="70.0" fill="#fff" opacity="0.18" filter="url(#blur)"/>
+<ellipse cx="560.0" cy="200.0" rx="150.0" ry="80.0" fill="#fff" opacity="0.18" filter="url(#blur)"/>
+<ellipse cx="718.0" cy="167.0" rx="127.5" ry="46.75" fill="#fff" opacity="0.16" filter="url(#blur)"/>
+<ellipse cx="820.0" cy="150.0" rx="153.0" ry="59.5" fill="#fff" opacity="0.16" filter="url(#blur)"/>
+<ellipse cx="922.0" cy="171.25" rx="127.5" ry="47.6" fill="#fff" opacity="0.16" filter="url(#blur)"/>
+<ellipse cx="803.0" cy="119.4" rx="102.0" ry="54.4" fill="#fff" opacity="0.16" filter="url(#blur)"/>
+<ellipse cx="236.0" cy="389.0" rx="217.5" ry="79.75" fill="#fff" opacity="0.12" filter="url(#blur)"/>
+<ellipse cx="410.0" cy="360.0" rx="261.0" ry="101.5" fill="#fff" opacity="0.12" filter="url(#blur)"/>
+<ellipse cx="584.0" cy="396.25" rx="217.5" ry="81.2" fill="#fff" opacity="0.12" filter="url(#blur)"/>
+<ellipse cx="381.0" cy="307.8" rx="174.0" ry="92.8" fill="#fff" opacity="0.12" filter="url(#blur)"/>
+<rect width="1024" height="768" fill="#000" opacity="0.28"/>
+<rect width="1024" height="768" filter="url(#grain)" opacity="0.30"/>
+<title>Dense overcast cloud layers, generated for iPad 1 weather background</title></svg>

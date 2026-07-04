@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="768" viewBox="0 0 1024 768">
+<defs>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#07111f"/><stop offset="0.58" stop-color="#11151b"/><stop offset="1" stop-color="#020305"/></linearGradient>
+  <radialGradient id="glow" cx="50%" cy="35%" r="48%"><stop offset="0" stop-color="#f5c36b" stop-opacity="0.95"/><stop offset="0.22" stop-color="#f5c36b" stop-opacity="0.28"/><stop offset="1" stop-color="#f5c36b" stop-opacity="0"/></radialGradient>
+  <filter id="blur"><feGaussianBlur stdDeviation="18"/></filter>
+  <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="3" seed="7"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="table" tableValues="0 0.12"/></feComponentTransfer></filter>
+ </defs>
+<rect width="1024" height="768" fill="url(#sky)"/>
+<rect width="1024" height="768" fill="url(#glow)"/>
+<circle cx="736" cy="190" r="98" fill="#ffd88a" opacity="0.78" filter="url(#blur)"/><circle cx="736" cy="190" r="46" fill="#fff1b2" opacity="0.88"/>
+<rect width="1024" height="768" fill="#000" opacity="0.28"/>
+<rect width="1024" height="768" filter="url(#grain)" opacity="0.30"/>
+<title>Clear sunset sky with warm sun glow, generated for iPad 1 weather background</title></svg>
