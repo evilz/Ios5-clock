@@ -463,7 +463,8 @@
                   longitude: result[0].lon,
                   label: result[0].display_name
                 });
-                weatherEl.innerHTML = 'météo en chargement · ' + result[0].display_name.split(',')[0];
+                var shortLabel = (result[0].display_name || '').split(',')[0];
+                weatherEl.textContent = 'météo en chargement' + (shortLabel ? ' · ' + shortLabel : '');
                 loadWeather(result[0].lat, result[0].lon);
                 return;
               }
