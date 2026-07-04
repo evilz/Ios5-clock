@@ -483,10 +483,12 @@
 
       function describeXhr(request, phase, startedAt, url) {
         var elapsed = startedAt ? (new Date().getTime() - startedAt) + ' ms' : '? ms';
-        var statusText = '';
-        try { statusText = request.statusText || ''; } catch (e) {}
         var status = '?';
-        try { status = request.status; } catch (e) {}
+        var statusText = '';
+        try {
+          status = request.status;
+          statusText = request.statusText || '';
+        } catch (e) {}
         return phase + ' · readyState=' + request.readyState + ' · status=' + status +
           (statusText ? ' ' + statusText : '') + ' · durée=' + elapsed + ' · ' +
           getXhrSupportLabel(request) + ' · URL=' + shorten(url, 140);
@@ -499,6 +501,7 @@
           return;
         }
 
+        setWeatherDebug('');
         var current = data.current_weather;
         var label = weatherCodeLabels[current.weathercode] || 'conditions météo';
         setWeatherBackground(current.weathercode);
@@ -515,6 +518,14 @@
         var finished = false;
         var timer;
 
+        function fail(message, debugMessage) {
+          if (finished) { return; }
+          finished = true;
+          if (timer) { window.clearTimeout(timer); }
+          weatherEl.textContent = message;
+          setWeatherDebug(debugMessage);
+        }
+
         if (!window.XMLHttpRequest) {
           weatherEl.textContent = errorPrefix + ' (XHR absent)';
           setWeatherDebug('XMLHttpRequest indisponible dans ce navigateur · UA=' + shorten(navigator.userAgent, 180));
@@ -522,39 +533,30 @@
         }
 
         request = new XMLHttpRequest();
-        setWeatherDebug(label + ' · ouverture · ' + getXhrSupportLabel(request) + ' · UA=' + shorten(navigator.userAgent, 160));
+        setWeatherDebug('');
 
         request.onreadystatechange = function () {
-          setWeatherDebug(describeXhr(request, label, startedAt, url));
           if (request.readyState !== 4 || finished) {
             return;
           }
 
-          finished = true;
-          if (timer) { window.clearTimeout(timer); }
-
           if (request.status >= 200 && request.status < 300) {
+            finished = true;
+            if (timer) { window.clearTimeout(timer); }
             try {
-              //setWeatherDebug(describeXhr(request, label + ' OK', startedAt, url) + ' · réponse=' + (request.responseText ? request.responseText.length : 0) + ' caractères');
               successCallback(JSON.parse(request.responseText));
             } catch (e) {
-              weatherEl.textContent = errorPrefix + ' (erreur parse: ' + e.message + ')';
-              setWeatherDebug(describeXhr(request, label + ' parse', startedAt, url) + ' · début réponse=' + shorten(request.responseText, 160));
+              finished = false;
+              fail(errorPrefix + ' (erreur parse: ' + e.message + ')', describeXhr(request, label + ' parse', startedAt, url) + ' · début réponse=' + shorten(request.responseText, 160));
             }
           } else if (request.status === 0) {
-            weatherEl.textContent = errorPrefix + ' (status 0 : réseau/CORS/SSL)';
-            setWeatherDebug(describeXhr(request, label + ' status 0', startedAt, url) + ' · souvent SSL ancien iOS, CORS ou fichier local');
+            fail(errorPrefix + ' (status 0 : réseau/CORS/SSL)', describeXhr(request, label + ' status 0', startedAt, url) + ' · souvent SSL ancien iOS, CORS ou fichier local');
           } else {
-            weatherEl.textContent = errorPrefix + ' (HTTP ' + request.status + ')';
-            setWeatherDebug(describeXhr(request, label + ' HTTP', startedAt, url) + ' · début réponse=' + shorten(request.responseText, 160));
+            fail(errorPrefix + ' (HTTP ' + request.status + ')', describeXhr(request, label + ' HTTP', startedAt, url) + ' · début réponse=' + shorten(request.responseText, 160));
           }
         };
         request.onerror = function () {
-          if (finished) { return; }
-          finished = true;
-          if (timer) { window.clearTimeout(timer); }
-          weatherEl.textContent = errorPrefix + ' (erreur réseau)';
-          setWeatherDebug(describeXhr(request, label + ' onerror', startedAt, url) + ' · vérifier SSL/CORS/DNS');
+          fail(errorPrefix + ' (erreur réseau)', describeXhr(request, label + ' onerror', startedAt, url) + ' · vérifier SSL/CORS/DNS');
         };
 
         try {
@@ -562,25 +564,16 @@
           if ('timeout' in request) {
             request.timeout = 15000;
             request.ontimeout = function () {
-              if (finished) { return; }
-              finished = true;
-              weatherEl.textContent = errorPrefix + ' (délai dépassé XHR)';
-              setWeatherDebug(describeXhr(request, label + ' timeout XHR', startedAt, url));
+              fail(errorPrefix + ' (délai dépassé XHR)', describeXhr(request, label + ' timeout XHR', startedAt, url));
             };
           }
           timer = window.setTimeout(function () {
-            if (finished) { return; }
-            finished = true;
+            fail(errorPrefix + ' (délai dépassé, 15 s)', describeXhr(request, label + ' timeout JS', startedAt, url) + ' · timeout manuel compatible iOS 5');
             try { request.abort(); } catch (e) {}
-            weatherEl.textContent = errorPrefix + ' (délai dépassé, 15 s)';
-            setWeatherDebug(describeXhr(request, label + ' timeout JS', startedAt, url) + ' · timeout manuel compatible iOS 5');
           }, 15000);
           request.send(null);
         } catch (e) {
-          finished = true;
-          if (timer) { window.clearTimeout(timer); }
-          weatherEl.textContent = errorPrefix + ' (exception XHR)';
-          setWeatherDebug(label + ' exception · ' + e.name + ': ' + e.message + ' · URL=' + shorten(url, 140));
+          fail(errorPrefix + ' (exception XHR)', label + ' exception · ' + e.name + ': ' + e.message + ' · URL=' + shorten(url, 140));
         }
       }
 
