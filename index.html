@@ -153,6 +153,20 @@
       text-shadow: none;
     }
 
+    #weather-debug {
+      display: none;
+      max-width: 88%;
+      margin: 6px auto 0;
+      color: rgba(210,210,214,0.34);
+      font-size: 11px;
+      line-height: 14px;
+      font-weight: 100;
+      letter-spacing: 0.4px;
+      text-align: center;
+      text-shadow: none;
+      word-wrap: break-word;
+    }
+
     .corner-icon {
       position: absolute;
       bottom: 23px;
@@ -290,6 +304,7 @@
       #seconds { width: 62px; margin-left: 12px; font-size: 49px; line-height: 49px; vertical-align: -36px; }
       #date { margin-top: 30px; font-size: 23px; line-height: 30px; }
       #weather { margin-top: 8px; font-size: 16px; line-height: 22px; }
+      #weather-debug { font-size: 10px; line-height: 13px; }
     }
   </style>
 </head>
@@ -300,6 +315,7 @@
       <div id="time-row"><span id="time">08:42</span><span id="seconds">15</span></div>
       <div id="date">lundi 9 janvier</div>
       <div id="weather">météo en attente de localisation</div>
+      <div id="weather-debug" aria-hidden="true"></div>
     </div>
   </div>
   <div id="settings-panel" class="hidden" aria-hidden="true">
@@ -319,6 +335,7 @@
       var secondsEl = document.getElementById('seconds');
       var dateEl = document.getElementById('date');
       var weatherEl = document.getElementById('weather');
+      var weatherDebugEl = document.getElementById('weather-debug');
       var weatherBackdrop = document.getElementById('weather-backdrop');
       var settingsButton = document.getElementById('settings');
       var fullscreenButton = document.getElementById('fullscreen');
@@ -441,9 +458,44 @@
         setClass(weatherBackdrop, 'visible', true);
       }
 
+      function setWeatherDebug(message) {
+        if (!weatherDebugEl) { return; }
+        weatherDebugEl.textContent = message || '';
+        weatherDebugEl.style.display = message ? 'block' : 'none';
+      }
+
+      function getXhrSupportLabel(request) {
+        var parts = [];
+        parts.push('XHR=' + (!!window.XMLHttpRequest ? 'oui' : 'non'));
+        parts.push('CORS=' + (request && 'withCredentials' in request ? 'oui' : 'incertain'));
+        parts.push('timeout=' + (request && 'timeout' in request ? 'oui' : 'non'));
+        parts.push('protocole=' + window.location.protocol);
+        return parts.join(' · ');
+      }
+
+      function shorten(value, maxLength) {
+        value = value || '';
+        if (value.length > maxLength) {
+          return value.substr(0, maxLength) + '…';
+        }
+        return value;
+      }
+
+      function describeXhr(request, phase, startedAt, url) {
+        var elapsed = startedAt ? (new Date().getTime() - startedAt) + ' ms' : '? ms';
+        var statusText = '';
+        try { statusText = request.statusText || ''; } catch (e) {}
+        var status = '?';
+        try { status = request.status; } catch (e) {}
+        return phase + ' · readyState=' + request.readyState + ' · status=' + status +
+          (statusText ? ' ' + statusText : '') + ' · durée=' + elapsed + ' · ' +
+          getXhrSupportLabel(request) + ' · URL=' + shorten(url, 140);
+      }
+
       function updateWeatherText(data, locationLabel) {
         if (!data || !data.current_weather) {
           weatherEl.textContent = 'météo indisponible';
+          setWeatherDebug('réponse reçue mais champ current_weather absent');
           return;
         }
 
@@ -457,33 +509,86 @@
         weatherEl.textContent = text;
       }
 
-      function loadWeather(latitude, longitude, locationLabel) {
-        var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + encodeURIComponent(latitude) + '&longitude=' + encodeURIComponent(longitude) + '&current_weather=true&temperature_unit=celsius&timezone=auto';
-        var request = new XMLHttpRequest();
-        request.open('GET', url, true);
-        request.timeout = 15000;
+      function runXhr(url, label, successCallback, errorPrefix) {
+        var request;
+        var startedAt = new Date().getTime();
+        var finished = false;
+        var timer;
+
+        if (!window.XMLHttpRequest) {
+          weatherEl.textContent = errorPrefix + ' (XHR absent)';
+          setWeatherDebug('XMLHttpRequest indisponible dans ce navigateur · UA=' + shorten(navigator.userAgent, 180));
+          return;
+        }
+
+        request = new XMLHttpRequest();
+        setWeatherDebug(label + ' · ouverture · ' + getXhrSupportLabel(request) + ' · UA=' + shorten(navigator.userAgent, 160));
+
         request.onreadystatechange = function () {
-          if (request.readyState !== 4) {
+          setWeatherDebug(describeXhr(request, label, startedAt, url));
+          if (request.readyState !== 4 || finished) {
             return;
           }
 
+          finished = true;
+          if (timer) { window.clearTimeout(timer); }
+
           if (request.status >= 200 && request.status < 300) {
             try {
-              updateWeatherText(JSON.parse(request.responseText), locationLabel);
+              setWeatherDebug(describeXhr(request, label + ' OK', startedAt, url) + ' · réponse=' + (request.responseText ? request.responseText.length : 0) + ' caractères');
+              successCallback(JSON.parse(request.responseText));
             } catch (e) {
-              weatherEl.textContent = 'météo indisponible (erreur parse: ' + e.message + ')';
+              weatherEl.textContent = errorPrefix + ' (erreur parse: ' + e.message + ')';
+              setWeatherDebug(describeXhr(request, label + ' parse', startedAt, url) + ' · début réponse=' + shorten(request.responseText, 160));
             }
+          } else if (request.status === 0) {
+            weatherEl.textContent = errorPrefix + ' (status 0 : réseau/CORS/SSL)';
+            setWeatherDebug(describeXhr(request, label + ' status 0', startedAt, url) + ' · souvent SSL ancien iOS, CORS ou fichier local');
           } else {
-            weatherEl.textContent = 'météo indisponible (HTTP ' + request.status + ')';
+            weatherEl.textContent = errorPrefix + ' (HTTP ' + request.status + ')';
+            setWeatherDebug(describeXhr(request, label + ' HTTP', startedAt, url) + ' · début réponse=' + shorten(request.responseText, 160));
           }
         };
         request.onerror = function () {
-          weatherEl.textContent = 'météo indisponible (erreur réseau)';
+          if (finished) { return; }
+          finished = true;
+          if (timer) { window.clearTimeout(timer); }
+          weatherEl.textContent = errorPrefix + ' (erreur réseau)';
+          setWeatherDebug(describeXhr(request, label + ' onerror', startedAt, url) + ' · vérifier SSL/CORS/DNS');
         };
-        request.ontimeout = function () {
-          weatherEl.textContent = 'météo indisponible (délai dépassé)';
-        };
-        request.send(null);
+
+        try {
+          request.open('GET', url, true);
+          if ('timeout' in request) {
+            request.timeout = 15000;
+            request.ontimeout = function () {
+              if (finished) { return; }
+              finished = true;
+              weatherEl.textContent = errorPrefix + ' (délai dépassé XHR)';
+              setWeatherDebug(describeXhr(request, label + ' timeout XHR', startedAt, url));
+            };
+          }
+          timer = window.setTimeout(function () {
+            if (finished) { return; }
+            finished = true;
+            try { request.abort(); } catch (e) {}
+            weatherEl.textContent = errorPrefix + ' (délai dépassé, 15 s)';
+            setWeatherDebug(describeXhr(request, label + ' timeout JS', startedAt, url) + ' · timeout manuel compatible iOS 5');
+          }, 15000);
+          request.send(null);
+        } catch (e) {
+          finished = true;
+          if (timer) { window.clearTimeout(timer); }
+          weatherEl.textContent = errorPrefix + ' (exception XHR)';
+          setWeatherDebug(label + ' exception · ' + e.name + ': ' + e.message + ' · URL=' + shorten(url, 140));
+        }
+      }
+
+      function loadWeather(latitude, longitude, locationLabel) {
+        var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + encodeURIComponent(latitude) + '&longitude=' + encodeURIComponent(longitude) + '&current_weather=true&temperature_unit=celsius&timezone=auto&_=' + new Date().getTime();
+        runXhr(url, 'météo', function (data) {
+          updateWeatherText(data, locationLabel);
+        }, 'météo indisponible');
       }
 
 
@@ -540,47 +645,22 @@
         }
 
         url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=fr&q=' + encodeURIComponent(query);
-        var request = new XMLHttpRequest();
-        request.open('GET', url, true);
-        request.timeout = 15000;
         weatherEl.textContent = 'géocodage en cours…';
-        request.onreadystatechange = function () {
-          var result;
-          if (request.readyState !== 4) {
+        runXhr(url, 'géocodage', function (result) {
+          if (result && result.length) {
+            saveManualWeatherLocation({
+              latitude: result[0].lat,
+              longitude: result[0].lon,
+              label: result[0].display_name
+            });
+            var shortLabel = (result[0].display_name || '').split(',')[0];
+            weatherEl.textContent = 'météo en chargement · ' + shortLabel;
+            loadWeather(result[0].lat, result[0].lon, shortLabel);
             return;
           }
-
-          if (request.status >= 200 && request.status < 300) {
-            try {
-              result = JSON.parse(request.responseText);
-              if (result && result.length) {
-                saveManualWeatherLocation({
-                  latitude: result[0].lat,
-                  longitude: result[0].lon,
-                  label: result[0].display_name
-                });
-                var shortLabel = (result[0].display_name || '').split(',')[0];
-                weatherEl.textContent = 'météo en chargement · ' + shortLabel;
-                loadWeather(result[0].lat, result[0].lon, shortLabel);
-                return;
-              }
-              weatherEl.textContent = 'adresse introuvable (aucun résultat pour "' + query + '")';
-            } catch (e) {
-              weatherEl.textContent = 'adresse introuvable (erreur parse: ' + e.message + ')';
-            }
-          } else if (request.status === 0) {
-            weatherEl.textContent = 'adresse introuvable (erreur réseau, vérifier connexion/SSL)';
-          } else {
-            weatherEl.textContent = 'adresse introuvable (HTTP ' + request.status + ')';
-          }
-        };
-        request.onerror = function () {
-          weatherEl.textContent = 'adresse introuvable (erreur réseau)';
-        };
-        request.ontimeout = function () {
-          weatherEl.textContent = 'adresse introuvable (délai dépassé, 15 s)';
-        };
-        request.send(null);
+          weatherEl.textContent = 'adresse introuvable (aucun résultat pour "' + query + '")';
+          setWeatherDebug('géocodage OK mais tableau vide · URL=' + shorten(url, 140));
+        }, 'adresse introuvable');
       }
 
       function initWeather() {
