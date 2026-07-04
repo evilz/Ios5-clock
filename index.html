@@ -114,15 +114,61 @@
     .corner-icon {
       position: absolute;
       bottom: 23px;
-      z-index: 3;
-      width: 22px;
-      height: 22px;
+      z-index: 4;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border: 0;
+      background: transparent;
       opacity: 0.42;
       color: #ffffff;
       text-align: center;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
       font-size: 22px;
-      line-height: 22px;
+      line-height: 32px;
       text-shadow: 0 0 10px rgba(255,255,255,0.34);
+      cursor: pointer;
+      -webkit-appearance: none;
+      -webkit-tap-highlight-color: rgba(255,255,255,0.12);
+    }
+
+    .corner-icon:active, .corner-icon.active {
+      opacity: 0.88;
+    }
+
+    #settings-panel {
+      position: absolute;
+      left: 18px;
+      bottom: 66px;
+      z-index: 4;
+      width: 188px;
+      padding: 12px 13px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(18,18,20,0.86);
+      color: rgba(255,255,255,0.82);
+      font-size: 13px;
+      line-height: 18px;
+      text-align: left;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+      -webkit-border-radius: 11px;
+      border-radius: 11px;
+      -webkit-box-shadow: 0 14px 34px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08);
+      box-shadow: 0 14px 34px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+
+    #settings-panel.hidden {
+      display: none;
+    }
+
+    #settings-panel label {
+      display: block;
+      margin: 6px 0;
+      white-space: nowrap;
+    }
+
+    #settings-panel input {
+      margin: 0 8px 0 0;
+      vertical-align: -2px;
     }
 
     #settings {
@@ -169,18 +215,29 @@
   <div id="stage">
     <div id="clock">
       <div id="time-row"><span id="time">08:42</span><span id="seconds">15</span></div>
-      <div id="date">Monday, January 9</div>
+      <div id="date">lundi 9 janvier</div>
     </div>
   </div>
-  <div id="settings" class="corner-icon">&#9881;</div>
-  <div id="fullscreen" class="corner-icon" aria-hidden="true"></div>
+  <div id="settings-panel" class="hidden" aria-hidden="true">
+    <label><input id="toggle-seconds" type="checkbox" checked>Afficher les secondes</label>
+    <label><input id="toggle-24h" type="checkbox" checked>Format 24 heures</label>
+  </div>
+  <button id="settings" class="corner-icon" type="button" aria-label="Réglages" aria-controls="settings-panel" aria-expanded="false">&#9881;</button>
+  <button id="fullscreen" class="corner-icon" type="button" aria-label="Plein écran"></button>
   <script type="text/javascript">
     (function () {
       var timeEl = document.getElementById('time');
       var secondsEl = document.getElementById('seconds');
       var dateEl = document.getElementById('date');
-      var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      var settingsButton = document.getElementById('settings');
+      var fullscreenButton = document.getElementById('fullscreen');
+      var settingsPanel = document.getElementById('settings-panel');
+      var secondsToggle = document.getElementById('toggle-seconds');
+      var formatToggle = document.getElementById('toggle-24h');
+      var days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+      var months = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+      var showSeconds = secondsToggle.checked;
+      var use24Hour = formatToggle.checked;
 
       function pad(value) {
         return value < 10 ? '0' + value : '' + value;
@@ -188,10 +245,68 @@
 
       function updateClock() {
         var now = new Date();
-        timeEl.innerHTML = pad(now.getHours()) + ':' + pad(now.getMinutes());
+        var hours = now.getHours();
+
+        if (!use24Hour) {
+          hours = hours % 12;
+          hours = hours ? hours : 12;
+        }
+
+        var hoursStr = use24Hour ? pad(hours) : '' + hours;
+        var ampm = use24Hour ? '' : (now.getHours() < 12 ? ' AM' : ' PM');
+        timeEl.innerHTML = hoursStr + ':' + pad(now.getMinutes()) + ampm;
         secondsEl.innerHTML = pad(now.getSeconds());
-        dateEl.innerHTML = days[now.getDay()] + ', ' + months[now.getMonth()] + ' ' + now.getDate();
+        secondsEl.style.visibility = showSeconds ? 'visible' : 'hidden';
+        dateEl.innerHTML = days[now.getDay()] + ' ' + now.getDate() + ' ' + months[now.getMonth()];
       }
+
+      function toggleSettings() {
+        var isHidden = settingsPanel.classList.contains('hidden');
+        settingsPanel.classList.toggle('hidden', !isHidden);
+        settingsPanel.setAttribute('aria-hidden', !isHidden ? 'true' : 'false');
+        settingsButton.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+        settingsButton.classList.toggle('active', isHidden);
+      }
+
+      function requestFullscreen(element) {
+        var request = element.requestFullscreen || element.webkitRequestFullScreen || element.webkitRequestFullscreen || element.mozRequestFullScreen || element.msRequestFullscreen;
+        if (request) {
+          request.call(element);
+        }
+      }
+
+      function exitFullscreen() {
+        var exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+        if (exit) {
+          exit.call(document);
+        }
+      }
+
+      function isFullscreen() {
+        return document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+      }
+
+      function toggleFullscreen() {
+        if (isFullscreen()) {
+          exitFullscreen();
+        } else {
+          requestFullscreen(document.documentElement);
+        }
+      }
+
+      settingsButton.onclick = toggleSettings;
+      fullscreenButton.onclick = toggleFullscreen;
+      if (!document.documentElement.requestFullscreen && !document.documentElement.webkitRequestFullScreen && !document.documentElement.webkitRequestFullscreen && !document.documentElement.mozRequestFullScreen && !document.documentElement.msRequestFullscreen) {
+        fullscreenButton.style.display = 'none';
+      }
+      secondsToggle.onclick = function () {
+        showSeconds = secondsToggle.checked;
+        updateClock();
+      };
+      formatToggle.onclick = function () {
+        use24Hour = formatToggle.checked;
+        updateClock();
+      };
 
       updateClock();
       setInterval(updateClock, 1000);
