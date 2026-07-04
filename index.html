@@ -236,8 +236,8 @@
       var formatToggle = document.getElementById('toggle-24h');
       var days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
       var months = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-      var showSeconds = true;
-      var use24Hour = true;
+      var showSeconds = secondsToggle.checked;
+      var use24Hour = formatToggle.checked;
 
       function pad(value) {
         return value < 10 ? '0' + value : '' + value;
@@ -252,22 +252,24 @@
           hours = hours ? hours : 12;
         }
 
-        timeEl.innerHTML = pad(hours) + ':' + pad(now.getMinutes());
+        var hoursStr = use24Hour ? pad(hours) : '' + hours;
+        var ampm = use24Hour ? '' : (now.getHours() < 12 ? ' AM' : ' PM');
+        timeEl.innerHTML = hoursStr + ':' + pad(now.getMinutes()) + ampm;
         secondsEl.innerHTML = pad(now.getSeconds());
         secondsEl.style.visibility = showSeconds ? 'visible' : 'hidden';
         dateEl.innerHTML = days[now.getDay()] + ' ' + now.getDate() + ' ' + months[now.getMonth()];
       }
 
       function toggleSettings() {
-        var isHidden = settingsPanel.className.indexOf('hidden') !== -1;
-        settingsPanel.className = isHidden ? '' : 'hidden';
-        settingsPanel.setAttribute('aria-hidden', isHidden ? 'false' : 'true');
+        var isHidden = settingsPanel.classList.contains('hidden');
+        settingsPanel.classList.toggle('hidden', !isHidden);
+        settingsPanel.setAttribute('aria-hidden', !isHidden ? 'true' : 'false');
         settingsButton.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
-        settingsButton.className = isHidden ? 'corner-icon active' : 'corner-icon';
+        settingsButton.classList.toggle('active', isHidden);
       }
 
       function requestFullscreen(element) {
-        var request = element.requestFullscreen || element.webkitRequestFullscreen || element.mozRequestFullScreen || element.msRequestFullscreen;
+        var request = element.requestFullscreen || element.webkitRequestFullScreen || element.webkitRequestFullscreen || element.mozRequestFullScreen || element.msRequestFullscreen;
         if (request) {
           request.call(element);
         }
@@ -294,6 +296,9 @@
 
       settingsButton.onclick = toggleSettings;
       fullscreenButton.onclick = toggleFullscreen;
+      if (!document.documentElement.requestFullscreen && !document.documentElement.webkitRequestFullScreen && !document.documentElement.webkitRequestFullscreen && !document.documentElement.mozRequestFullScreen && !document.documentElement.msRequestFullscreen) {
+        fullscreenButton.style.display = 'none';
+      }
       secondsToggle.onclick = function () {
         showSeconds = secondsToggle.checked;
         updateClock();
