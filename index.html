@@ -459,7 +459,9 @@
       }
 
       function setWeatherDebug(message) {
-        weatherDebugEl.textContent = message;
+        if (!weatherDebugEl) { return; }
+        weatherDebugEl.textContent = message || '';
+        weatherDebugEl.style.display = message ? 'block' : 'none';
       }
 
       function getXhrSupportLabel(request) {
