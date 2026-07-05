@@ -306,6 +306,71 @@
       #weather { margin-top: 8px; font-size: 16px; line-height: 22px; }
       #weather-debug { font-size: 10px; line-height: 13px; }
     }
+
+    @media only screen and (orientation: landscape) and (max-height: 500px) {
+      #stage {
+        top: 48%;
+        margin-top: 0;
+        -webkit-transform: translateY(-50%);
+        transform: translateY(-50%);
+      }
+
+      #time {
+        font-size: 30vw;
+        line-height: 25vw;
+        letter-spacing: -2.2vw;
+      }
+
+      #seconds {
+        width: 10vw;
+        margin-left: 1.5vw;
+        font-size: 7.6vw;
+        line-height: 7.6vw;
+        letter-spacing: -0.2vw;
+        vertical-align: -5.8vw;
+      }
+
+      #date {
+        margin-top: 8vh;
+        font-size: 5.2vw;
+        line-height: 6vw;
+        letter-spacing: 0.34vw;
+      }
+
+      #weather {
+        margin-top: 2vh;
+        font-size: 3.3vw;
+        line-height: 4vw;
+        letter-spacing: 0.18vw;
+      }
+
+      #weather-debug {
+        max-width: 70%;
+        margin-top: 1vh;
+        font-size: 2.4vw;
+        line-height: 3vw;
+      }
+
+      .corner-icon {
+        bottom: 4vh;
+        width: 26px;
+        height: 26px;
+        font-size: 19px;
+        line-height: 26px;
+      }
+
+      #settings {
+        left: 18px;
+      }
+
+      #fullscreen {
+        right: 18px;
+      }
+
+      #settings-panel {
+        bottom: 48px;
+      }
+    }
   </style>
 </head>
 <body>
